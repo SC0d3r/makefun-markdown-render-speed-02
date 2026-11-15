@@ -1,0 +1,13 @@
+{
+  "name": "makefun-markdown-render-speed-02",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fast drop-in Markdown renderer for the make.fun markdown render speed competition.",
+  "scripts": {
+    "test": "node test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
