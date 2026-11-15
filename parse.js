@@ -1,3 +1,4 @@
+import './tokenizer-guards.js';
 import { marked } from './vendor/marked/marked.esm.js';
 
 /**
