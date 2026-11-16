@@ -39,10 +39,14 @@ Final tree, measured in this session with `node bench.mjs --runs 3`:
 
 | Run | CPU |
 | --- | --- |
-| 1 | pending |
-| 2 | pending |
-| 3 | pending |
-| **Minimum** | **pending** |
+| 1 | 11520 ms |
+| 2 | 11430 ms |
+| 3 | 11440 ms |
+| **Minimum** | **11430 ms** |
+
+Median: 11440 ms. Exactness on the same tree: 720/720 cases byte-identical.
+The machine was busy during this sample, so absolute values are higher than
+the earlier 7890 ms minimum; compare only numbers taken back to back.
 
 Recorded improvements, newest last:
 
@@ -59,6 +63,12 @@ Recorded improvements, newest last:
 - Per-bullet `listItemRegex` cache (commit `9d93603`) reuses identical
   regular expressions across list items instead of rebuilding them for every
   bullet.
+- Cache threshold lowered to 64 entries (commit `61dfc70`): the list item
+  regexp cache now evicts earlier, bounding memory while keeping the hot
+  bullet patterns resident.
+- Escape double-check removed (commit `61dfc70`): `P()` already calls
+  `needsEscape`, so the following `escapeTest.test` regexp could never be
+  false and is skipped.
 
 ## Commit list
 
@@ -66,9 +76,9 @@ Recorded improvements, newest last:
 - `57ba13e` Author the driver, helpers and test harness
 - `9d93603` Cache per-bullet list item regular expressions
 - `b483258` Document measured speedups and usage
-- `Rewrite the driver and helpers for round four` (this round)
-- `Tune the list item cache threshold` (this round)
-- `Document round four measurements` (this round)
+- `484e666` Rewrite the driver and helpers for round four
+- `61dfc70` Tune the list item cache threshold
+- `Document round four measurements` (this README update)
 
 ## Test
 
