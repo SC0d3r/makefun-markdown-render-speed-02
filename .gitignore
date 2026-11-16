@@ -4,3 +4,5 @@
 .profile
 node_modules/
 *.log
+.DS_Store
+*.tsbuildinfo

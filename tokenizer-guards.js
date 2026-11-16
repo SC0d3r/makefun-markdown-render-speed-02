@@ -4,29 +4,42 @@
  * The block and inline tokenizers mostly start with a cheap regular
  * expression that can only match when the source begins with (or, for block
  * tokenizers, has within three leading spaces) one of a few marker
- * characters. These helpers let us reject impossible calls before the regexp
- * engine is entered.
+ * characters. These helpers reject impossible calls before the regexp engine
+ * is entered.
  */
 
+const MAX_BLOCK_INDENT = 3;
+
 /**
- * Return the character code after at most three leading spaces. Block
- * tokenizer regular expressions anchor at a line start and allow no more
- * than three spaces before their marker.
+ * Return the character code after at most three leading spaces.
+ *
+ * Block tokenizer regular expressions anchor at a line start and allow no
+ * more than three spaces before their marker. An empty or all-padding source
+ * yields NaN, which compares unequal to every marker code.
+ *
+ * @param {string} source
+ * @returns {number}
  */
 export function blockMarker(source) {
   let index = 0;
-  while (index < 3 && source.charCodeAt(index) === 32) index++;
+  while (index < MAX_BLOCK_INDENT && source.charCodeAt(index) === 32) index++;
   return source.charCodeAt(index);
 }
 
+/** Character code at the very start of `source` (NaN when empty). */
 export function firstChar(source) {
   return source.charCodeAt(0);
 }
 
 /**
- * True when the string contains one of `& < > " '`. When it does not, marked
- * can skip both the escape regexp and the replacement pass; this is the case
- * for the overwhelming majority of rendered text.
+ * True when the string contains one of `& < > " '`.
+ *
+ * When it does not, marked can skip both the escape regexp and the
+ * replacement pass; this is the case for the overwhelming majority of
+ * rendered text.
+ *
+ * @param {string} source
+ * @returns {boolean}
  */
 export function needsEscape(source) {
   for (let index = 0; index < source.length; index++) {
@@ -60,25 +73,30 @@ const DASH = 45;
 const PLUS = 43;
 const BANG = 33;
 const DOT = 46;
+const DIGIT_ZERO = 48;
+const DIGIT_NINE = 57;
+const UPPER_A = 65;
+const UPPER_Z = 90;
+const LOWER_A = 97;
+const LOWER_Z = 122;
 
 function isAsciiDigit(code) {
-  return code >= 48 && code <= 57;
+  return code >= DIGIT_ZERO && code <= DIGIT_NINE;
 }
 
 function isAsciiLetter(code) {
-  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+  return (code >= UPPER_A && code <= UPPER_Z) || (code >= LOWER_A && code <= LOWER_Z);
 }
 
+/**
+ * A guard returns true when the wrapped tokenizer could possibly match. A
+ * false result lets marked skip the call entirely.
+ */
 const guards = {
   // Block tokenizers.
   space(source) {
     const code = firstChar(source);
-    return (
-      source.length === 0 ||
-      code === SPACE ||
-      code === TAB ||
-      code === NEWLINE
-    );
+    return source.length === 0 || code === SPACE || code === TAB || code === NEWLINE;
   },
   code(source) {
     const code = firstChar(source);
@@ -100,12 +118,7 @@ const guards = {
   },
   list(source) {
     const code = blockMarker(source);
-    return (
-      code === STAR ||
-      code === PLUS ||
-      code === DASH ||
-      isAsciiDigit(code)
-    );
+    return code === STAR || code === PLUS || code === DASH || isAsciiDigit(code);
   },
   html(source) {
     return blockMarker(source) === LESS;
@@ -175,9 +188,13 @@ const guards = {
 };
 
 /**
- * Install the guards on a Tokenizer class (normally marked's). Kept as an
- * explicit step so this module stays free of imports; the vendored bundle can
- * then reuse `needsEscape` without creating an import cycle.
+ * Install the guards on a Tokenizer class (normally marked's).
+ *
+ * Kept as an explicit step so this module stays free of imports; the vendored
+ * bundle can then reuse `needsEscape` without creating an import cycle.
+ *
+ * @param {Function} Tokenizer
+ * @returns {object} The guarded prototype.
  */
 export function installGuards(Tokenizer) {
   const prototype = Tokenizer.prototype;

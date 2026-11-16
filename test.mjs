@@ -5,7 +5,8 @@ import { spawnSync } from 'node:child_process';
 
 const repo = dirname(fileURLToPath(import.meta.url));
 const kit = '/home/sck/sr/md02-kit/markdown-render-speed-02-kit';
-// Optional argument: an input directory, or a path to its cases.json.
+
+// Usage: node test.mjs [inputDir|cases.json] [expected.json]
 const casesArg = process.argv[2] ? resolve(process.argv[2]) : null;
 const inputDir = casesArg
   ? (casesArg.endsWith('.json') ? dirname(casesArg) : casesArg)
@@ -13,6 +14,7 @@ const inputDir = casesArg
 const expectedFile = process.argv[3]
   ? resolve(process.argv[3])
   : join(kit, 'practice', 'reference', 'expected.json');
+
 const outputDir = join(repo, '.test-output');
 const cpuFile = join(outputDir, 'cpu.txt');
 const timeBin = '/usr/bin/time';
@@ -26,6 +28,8 @@ const env = {
   MAKEFUN_OUTPUT_DIR: outputDir,
 };
 
+// Run the driver and record its user+system CPU time. GNU time is preferred;
+// the in-process fallback keeps the script portable (e.g. macOS).
 let result;
 if (existsSync(timeBin)) {
   result = spawnSync(
@@ -62,6 +66,11 @@ const cases = JSON.parse(readFileSync(join(inputDir, 'cases.json'), 'utf8'));
 const expected = JSON.parse(readFileSync(expectedFile, 'utf8'));
 const expectedById = new Map(expected.cases.map((entry) => [entry.id, entry.html]));
 const html = JSON.parse(readFileSync(join(outputDir, 'html.json'), 'utf8'));
+
+if (cases.length !== html.length) {
+  console.error(`main.ts wrote ${html.length} results for ${cases.length} cases`);
+  process.exit(1);
+}
 
 let matches = 0;
 const failures = [];

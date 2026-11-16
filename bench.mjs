@@ -14,8 +14,12 @@ const timeBin = '/usr/bin/time';
 let runs = 4;
 const runsIndex = process.argv.indexOf('--runs');
 if (runsIndex !== -1) {
-  const parsed = Number.parseInt(process.argv[runsIndex + 1], 10);
-  if (Number.isFinite(parsed) && parsed > 0) runs = parsed;
+  const raw = process.argv[runsIndex + 1];
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`--runs expects a positive integer, got ${JSON.stringify(raw)}`);
+  }
+  runs = parsed;
 }
 
 const cases = JSON.parse(readFileSync(join(inputDir, 'cases.json'), 'utf8'));

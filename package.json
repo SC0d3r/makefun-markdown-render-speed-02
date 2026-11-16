@@ -5,8 +5,10 @@
   "type": "module",
   "description": "Fast drop-in Markdown renderer for the make.fun markdown render speed competition.",
   "scripts": {
+    "start": "node main.ts",
     "test": "node test.mjs",
-    "bench": "node bench.mjs --runs 4"
+    "bench": "node bench.mjs --runs 4",
+    "check": "node test.mjs"
   },
   "engines": {
     "node": ">=22"
