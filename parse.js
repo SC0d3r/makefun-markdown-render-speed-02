@@ -20,7 +20,26 @@ export const OPTIONS = Object.freeze({});
  * @returns {string} The rendered HTML.
  */
 export function render(markdown) {
+  if (typeof markdown !== 'string') {
+    throw new TypeError(`render expects a string, got ${typeof markdown}`);
+  }
   return marked.parse(markdown, OPTIONS);
+}
+
+/**
+ * Render every Markdown document in `documents`, preserving order.
+ *
+ * The result array is preallocated so V8 keeps it packed for large batches.
+ *
+ * @param {string[]} documents Source Markdown documents.
+ * @returns {string[]} Rendered HTML strings.
+ */
+export function renderAll(documents) {
+  const html = new Array(documents.length);
+  for (let index = 0; index < documents.length; index++) {
+    html[index] = render(documents[index]);
+  }
+  return html;
 }
 
 /** Alias kept for the competition's `parse(markdown)` entry point. */

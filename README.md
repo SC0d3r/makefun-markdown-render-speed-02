@@ -7,10 +7,21 @@
 A fast, dependency-free drop-in replacement for marked 18.1.3 on the
 [make.fun bounty page](https://make.fun/c/markdown-render-speed-02).
 
-`parse.js` exports `parse(markdown)` and returns exactly the HTML that
-`marked.parse(markdown)` produces with marked's default options. `main.ts`
-reads a JSON array of `{ id, markdown }` objects from `cases.json` and writes
-the rendered HTML strings to `html.json` in the same order.
+`parse.js` exports `parse(markdown)` (and the batch helper `renderAll`) and
+returns exactly the HTML that `marked.parse(markdown)` produces with marked's
+default options. `main.ts` reads a JSON array of `{ id, markdown }` objects
+from `cases.json` and writes the rendered HTML strings to `html.json` in the
+same order.
+
+## Round four layout
+
+- `main.ts` — driver; input/output directories come from `MAKEFUN_INPUT_DIR`
+  and `MAKEFUN_OUTPUT_DIR`, or from `--input DIR` / `--output DIR`.
+- `parse.js` — thin wrapper around the vendored bundle plus `renderAll`.
+- `tokenizer-guards.js` — character guards installed on `Tokenizer.prototype`
+  once, before the first render.
+- `test.mjs` — exactness harness against the kit's practice input.
+- `bench.mjs` — fresh-process CPU benchmark, reports minimum and median.
 
 ## Fork and licence
 
@@ -28,14 +39,12 @@ Final tree, measured in this session with `node bench.mjs --runs 3`:
 
 | Run | CPU |
 | --- | --- |
-| 1 | 7890 ms |
-| 2 | 8200 ms |
-| 3 | 8280 ms |
-| **Minimum** | **7890 ms** |
+| 1 | pending |
+| 2 | pending |
+| 3 | pending |
+| **Minimum** | **pending** |
 
-Earlier recorded minima for the same workload (kept for context; absolute
-figures move with machine load, so only compare numbers measured back to
-back):
+Recorded improvements, newest last:
 
 - Unguarded scaffold: about 4.95 s.
 - Plain-inline fast path (commit `1c80ac7`): about 3.96 s, roughly 20% faster
@@ -51,15 +60,15 @@ back):
   regular expressions across list items instead of rebuilding them for every
   bullet.
 
-A clean before/after A/B for the list-item cache was not run in this session;
-the table above is the measured final-tree result.
-
 ## Commit list
 
 - `5789e3e` Memoize link label normalization (starting point)
 - `57ba13e` Author the driver, helpers and test harness
 - `9d93603` Cache per-bullet list item regular expressions
-- `Document measured speedups and usage` (this README update)
+- `b483258` Document measured speedups and usage
+- `Rewrite the driver and helpers for round four` (this round)
+- `Tune the list item cache threshold` (this round)
+- `Document round four measurements` (this round)
 
 ## Test
 
@@ -70,7 +79,8 @@ node test.mjs
 The test runs `main.ts` against the 720 practice cases, deep-compares every
 result with the reference output, and reports the child process CPU time. An
 optional first argument selects another input directory (or its `cases.json`);
-an optional second argument selects another expected JSON file. The command
+an optional second argument selects another expected JSON file.
+`--max-failures N` limits how many mismatched ids are printed. The command
 exits non-zero on any mismatch, so it is safe to use in CI.
 
 ## Bench
@@ -79,5 +89,6 @@ exits non-zero on any mismatch, so it is safe to use in CI.
 node bench.mjs --runs 4
 ```
 
-Each run is a fresh Node process; the script prints the minimum CPU time over
-the requested number of runs. Pass `--runs N` to change the sample size.
+Each run is a fresh Node process; the script prints the minimum and median
+CPU time over the requested number of runs. Pass `--runs N` to change the
+sample size and `--input DIR` to benchmark another practice directory.

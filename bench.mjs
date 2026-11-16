@@ -5,22 +5,39 @@ import { spawnSync } from 'node:child_process';
 
 const repo = dirname(fileURLToPath(import.meta.url));
 const kit = '/home/sck/sr/md02-kit/markdown-render-speed-02-kit';
-const inputDir = join(kit, 'practice', 'input');
-const expectedFile = join(kit, 'practice', 'reference', 'expected.json');
 const benchDir = join(repo, '.bench-output');
 const timeBin = '/usr/bin/time';
 
-// Usage: node bench.mjs [--runs N]
+/**
+ * Usage: node bench.mjs [--runs N] [--input DIR]
+ *
+ * Every run spawns a fresh `main.ts` process and reports its user+system CPU
+ * time, so the numbers are comparable with the judge's harness.
+ */
+const argv = process.argv.slice(2);
+
+function flagValue(name) {
+  const index = argv.indexOf(`--${name}`);
+  if (index === -1) return null;
+  const value = argv[index + 1];
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`--${name} expects a value`);
+  }
+  return value;
+}
+
 let runs = 4;
-const runsIndex = process.argv.indexOf('--runs');
-if (runsIndex !== -1) {
-  const raw = process.argv[runsIndex + 1];
-  const parsed = Number.parseInt(raw, 10);
+const rawRuns = flagValue('runs');
+if (rawRuns !== null) {
+  const parsed = Number.parseInt(rawRuns, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) {
-    throw new Error(`--runs expects a positive integer, got ${JSON.stringify(raw)}`);
+    throw new Error(`--runs expects a positive integer, got ${JSON.stringify(rawRuns)}`);
   }
   runs = parsed;
 }
+
+const inputDir = flagValue('input') || join(kit, 'practice', 'input');
+const expectedFile = join(kit, 'practice', 'reference', 'expected.json');
 
 const cases = JSON.parse(readFileSync(join(inputDir, 'cases.json'), 'utf8'));
 const expected = JSON.parse(readFileSync(expectedFile, 'utf8'));
@@ -59,6 +76,7 @@ for (let run = 1; run <= runs; run++) {
     writeFileSync(cpuFile, `${used.user / 1e6} ${used.system / 1e6}\n`);
   }
 
+  if (result.error) throw result.error;
   if (result.status !== 0) {
     process.stderr.write(result.stdout || '');
     process.stderr.write(result.stderr || '');
@@ -66,16 +84,19 @@ for (let run = 1; run <= runs; run++) {
   }
 
   const parts = readFileSync(cpuFile, 'utf8').trim().split(/\s+/).map(Number);
-  const cpuMs = parts.filter(Number.isFinite).reduce((a, b) => a + b, 0) * 1000;
+  const cpuMs = parts.filter(Number.isFinite).reduce((sum, value) => sum + value, 0) * 1000;
   cpuTimes.push(cpuMs);
 
   const html = JSON.parse(readFileSync(join(outputDir, 'html.json'), 'utf8'));
   let matches = 0;
-  for (let i = 0; i < cases.length; i++) {
-    if (html[i] === expectedById.get(cases[i].id)) matches++;
+  for (let index = 0; index < cases.length; index++) {
+    if (html[index] === expectedById.get(cases[index].id)) matches++;
   }
 
   console.log(`run ${run}: ${matches} of ${cases.length} matches, ${cpuMs.toFixed(1)} ms CPU`);
 }
 
-console.log(`minimum CPU: ${Math.min(...cpuTimes).toFixed(1)} ms over ${runs} runs`);
+const minimum = Math.min(...cpuTimes);
+const median = [...cpuTimes].sort((a, b) => a - b)[Math.floor(cpuTimes.length / 2)];
+console.log(`minimum CPU: ${minimum.toFixed(1)} ms over ${runs} runs`);
+console.log(`median CPU: ${median.toFixed(1)} ms over ${runs} runs`);

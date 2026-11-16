@@ -3,14 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Fast drop-in Markdown renderer for the make.fun markdown render speed competition.",
+  "description": "Byte-exact, dependency-free drop-in for marked 18.1.3, tuned for the make.fun markdown render speed competition.",
   "scripts": {
     "start": "node main.ts",
     "test": "node test.mjs",
+    "test:quiet": "node test.mjs --max-failures 1",
     "bench": "node bench.mjs --runs 4",
+    "bench:quick": "node bench.mjs --runs 2",
     "check": "node test.mjs"
   },
   "engines": {
     "node": ">=22"
-  }
+  },
+  "keywords": [
+    "markdown",
+    "marked",
+    "benchmark",
+    "drop-in"
+  ]
 }

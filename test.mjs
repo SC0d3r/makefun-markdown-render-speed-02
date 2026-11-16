@@ -6,13 +6,31 @@ import { spawnSync } from 'node:child_process';
 const repo = dirname(fileURLToPath(import.meta.url));
 const kit = '/home/sck/sr/md02-kit/markdown-render-speed-02-kit';
 
-// Usage: node test.mjs [inputDir|cases.json] [expected.json]
-const casesArg = process.argv[2] ? resolve(process.argv[2]) : null;
+/**
+ * Usage: node test.mjs [inputDir|cases.json] [expected.json] [--max-failures N]
+ *
+ * The positional arguments default to the kit's practice input and reference
+ * files. `--max-failures` only changes how many mismatched ids are listed;
+ * the exit status always reflects every case.
+ */
+const options = process.argv.slice(2);
+let maxFailures = 5;
+const maxFailuresIndex = options.indexOf('--max-failures');
+if (maxFailuresIndex !== -1) {
+  const parsed = Number.parseInt(options[maxFailuresIndex + 1], 10);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error('--max-failures expects a positive integer');
+  }
+  maxFailures = parsed;
+  options.splice(maxFailuresIndex, 2);
+}
+
+const casesArg = options[0] ? resolve(options[0]) : null;
 const inputDir = casesArg
   ? (casesArg.endsWith('.json') ? dirname(casesArg) : casesArg)
   : join(kit, 'practice', 'input');
-const expectedFile = process.argv[3]
-  ? resolve(process.argv[3])
+const expectedFile = options[1]
+  ? resolve(options[1])
   : join(kit, 'practice', 'reference', 'expected.json');
 
 const outputDir = join(repo, '.test-output');
@@ -28,26 +46,38 @@ const env = {
   MAKEFUN_OUTPUT_DIR: outputDir,
 };
 
-// Run the driver and record its user+system CPU time. GNU time is preferred;
-// the in-process fallback keeps the script portable (e.g. macOS).
-let result;
-if (existsSync(timeBin)) {
-  result = spawnSync(
-    timeBin,
-    ['-f', '%U %S', '-o', cpuFile, process.execPath, 'main.ts'],
-    { cwd: repo, env, encoding: 'utf8' },
-  );
-} else {
+/**
+ * Run `main.ts` as a fresh process and return `{ status, stdout, stderr }`.
+ *
+ * GNU time is preferred because it reports the child's own user+system CPU;
+ * the `process.cpuUsage()` fallback keeps the harness portable (e.g. macOS)
+ * and writes the same two-number cpu file.
+ */
+function runDriver() {
+  if (existsSync(timeBin)) {
+    const timed = spawnSync(
+      timeBin,
+      ['-f', '%U %S', '-o', cpuFile, process.execPath, 'main.ts'],
+      { cwd: repo, env, encoding: 'utf8' },
+    );
+    return timed;
+  }
+
   const started = process.cpuUsage();
-  result = spawnSync(process.execPath, ['main.ts'], {
+  const result = spawnSync(process.execPath, ['main.ts'], {
     cwd: repo,
     env,
     encoding: 'utf8',
   });
   const used = process.cpuUsage(started);
   writeFileSync(cpuFile, `${used.user / 1e6} ${used.system / 1e6}\n`);
+  return result;
 }
 
+const result = runDriver();
+if (result.error) {
+  throw result.error;
+}
 if (result.status !== 0) {
   process.stderr.write(result.stdout || '');
   process.stderr.write(result.stderr || '');
@@ -58,14 +88,20 @@ if (result.status !== 0) {
 let cpuMs = 0;
 if (existsSync(cpuFile)) {
   const parts = readFileSync(cpuFile, 'utf8').trim().split(/\s+/).map(Number);
-  const seconds = parts.filter(Number.isFinite).reduce((a, b) => a + b, 0);
+  const seconds = parts.filter(Number.isFinite).reduce((sum, value) => sum + value, 0);
   cpuMs = seconds * 1000;
 }
 
 const cases = JSON.parse(readFileSync(join(inputDir, 'cases.json'), 'utf8'));
 const expected = JSON.parse(readFileSync(expectedFile, 'utf8'));
 const expectedById = new Map(expected.cases.map((entry) => [entry.id, entry.html]));
-const html = JSON.parse(readFileSync(join(outputDir, 'html.json'), 'utf8'));
+
+const htmlFile = join(outputDir, 'html.json');
+if (!existsSync(htmlFile)) {
+  console.error(`main.ts did not write ${htmlFile}`);
+  process.exit(1);
+}
+const html = JSON.parse(readFileSync(htmlFile, 'utf8'));
 
 if (cases.length !== html.length) {
   console.error(`main.ts wrote ${html.length} results for ${cases.length} cases`);
@@ -74,12 +110,12 @@ if (cases.length !== html.length) {
 
 let matches = 0;
 const failures = [];
-for (let i = 0; i < cases.length; i++) {
-  const wanted = expectedById.get(cases[i].id);
-  if (html[i] === wanted) {
+for (let index = 0; index < cases.length; index++) {
+  const wanted = expectedById.get(cases[index].id);
+  if (html[index] === wanted) {
     matches++;
-  } else if (failures.length < 5) {
-    failures.push(cases[i].id);
+  } else if (failures.length < maxFailures) {
+    failures.push(cases[index].id);
   }
 }
 

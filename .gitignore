@@ -1,8 +1,17 @@
+# Test and benchmark artefacts
 .test-output/
 .bench-output/
-.work/
 .profile
-node_modules/
+
+# Local scratch space
+.work/
+*.tmp
 *.log
-.DS_Store
+
+# Tooling
+node_modules/
+coverage/
 *.tsbuildinfo
+
+# Editors and OS
+.DS_Store

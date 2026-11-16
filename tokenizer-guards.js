@@ -32,6 +32,15 @@ export function firstChar(source) {
 }
 
 /**
+ * ASCII lookup table for the five characters marked escapes: `& < > " '`.
+ * Codes at or above 128 can never be escapable, so the table covers the
+ * whole alphabet that matters and keeps the scan to one array read per
+ * character.
+ */
+const ESCAPABLE = new Uint8Array(128);
+for (const code of [38, 60, 62, 34, 39]) ESCAPABLE[code] = 1;
+
+/**
  * True when the string contains one of `& < > " '`.
  *
  * When it does not, marked can skip both the escape regexp and the
@@ -43,16 +52,8 @@ export function firstChar(source) {
  */
 export function needsEscape(source) {
   for (let index = 0; index < source.length; index++) {
-    switch (source.charCodeAt(index)) {
-      case 38: // &
-      case 60: // <
-      case 62: // >
-      case 34: // "
-      case 39: // '
-        return true;
-      default:
-        break;
-    }
+    const code = source.charCodeAt(index);
+    if (code < 128 && ESCAPABLE[code] === 1) return true;
   }
   return false;
 }
@@ -187,17 +188,24 @@ const guards = {
   },
 };
 
+/** Marks a prototype that already carries the guard layer. */
+const GUARDED = Symbol.for('makefun.tokenizerGuards.installed');
+
 /**
  * Install the guards on a Tokenizer class (normally marked's).
  *
  * Kept as an explicit step so this module stays free of imports; the vendored
  * bundle can then reuse `needsEscape` without creating an import cycle.
+ * Calling it twice on the same prototype is a no-op, so a double import can
+ * never wrap the wrappers and double the call overhead.
  *
  * @param {Function} Tokenizer
  * @returns {object} The guarded prototype.
  */
 export function installGuards(Tokenizer) {
   const prototype = Tokenizer.prototype;
+  if (prototype[GUARDED]) return prototype;
+
   for (const [name, canMatch] of Object.entries(guards)) {
     const original = prototype[name];
     prototype[name] = function guardedTokenizer(source) {
@@ -205,5 +213,11 @@ export function installGuards(Tokenizer) {
       return original.apply(this, arguments);
     };
   }
+
+  Object.defineProperty(prototype, GUARDED, {
+    value: true,
+    enumerable: false,
+    configurable: false,
+  });
   return prototype;
 }
