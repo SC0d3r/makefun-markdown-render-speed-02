@@ -21,18 +21,45 @@ apart from in-place performance work, and adds a small guard layer in
 
 ## Measured speedups
 
-All numbers are interleaved fresh-process runs on the 720 practice cases,
-comparing the minimum user+system CPU time:
+Every comparison below uses fresh Node processes over the 720 practice cases
+and reports the minimum user+system CPU time.
 
+Final tree, measured in this session with `node bench.mjs --runs 3`:
+
+| Run | CPU |
+| --- | --- |
+| 1 | 7890 ms |
+| 2 | 8200 ms |
+| 3 | 8280 ms |
+| **Minimum** | **7890 ms** |
+
+Earlier recorded minima for the same workload (kept for context; absolute
+figures move with machine load, so only compare numbers measured back to
+back):
+
+- Unguarded scaffold: about 4.95 s.
+- Plain-inline fast path (commit `1c80ac7`): about 3.96 s, roughly 20% faster
+  than `8f6ff7d`.
 - Character guards on tokenizer entry: about 1.2x faster than the unguarded
   scaffold by rejecting impossible tokenizer calls before they enter the
   regexp engine.
-- Fast path for wholly plain inline runs (commit `1c80ac7`): 4.95 s down to
-  3.96 s, about 20% faster than `8f6ff7d`.
 - Escape early-out: skips the escape regexp and replacement pass for text
   without `& < > " '`, which is the common case.
 - Memoized link-label normalization (commit `5789e3e`) avoids repeating the
   same whitespace/case pass for repeated reference labels.
+- Per-bullet `listItemRegex` cache (commit `9d93603`) reuses identical
+  regular expressions across list items instead of rebuilding them for every
+  bullet.
+
+A clean before/after A/B for the list-item cache was not run in this session;
+the table above is the measured final-tree result.
+
+## Commit list
+
+- `5789e3e` Memoize link label normalization (starting point)
+- `57ba13e` Author the driver, helpers and test harness
+- `9d93603` Cache per-bullet list item regular expressions
+- `Document measured speedups and usage` (this README update)
 
 ## Test
 
