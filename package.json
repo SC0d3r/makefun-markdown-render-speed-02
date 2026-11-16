@@ -1,0 +1,10 @@
+{
+  "name": "md02-entry",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node test.mjs",
+    "bench": "node bench.mjs"
+  }
+}
