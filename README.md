@@ -39,18 +39,17 @@ apart from in-place performance work, and adds a small guard layer in
 Every comparison below uses fresh Node processes over the 720 practice cases
 and reports the minimum user+system CPU time.
 
-Final tree, measured in this session with `node bench.mjs --runs 3`:
+Round five, measured in this session with the mandatory `node test.mjs` run
+after each change (child user+system CPU over the 720 practice cases):
 
-| Run | CPU |
-| --- | --- |
-| 1 | 11520 ms |
-| 2 | 11430 ms |
-| 3 | 11440 ms |
-| **Minimum** | **11430 ms** |
+| Tree | CPU | Exactness |
+| --- | --- | --- |
+| Driver/helper polish (`edacc36`) | 8990.0 ms | 720/720 |
+| List item cache at 32 (`8931b41`) | 7770.0 ms | 720/720 |
 
-Median: 11440 ms. Exactness on the same tree: 720/720 cases byte-identical.
-The machine was busy during this sample, so absolute values are higher than
-the earlier 7890 ms minimum; compare only numbers taken back to back.
+The cache-threshold change cut roughly 1220 ms (about 13.6%) from the
+immediately preceding tree, measured back to back on a shared machine, so
+treat it as an in-session comparison rather than a stable absolute number.
 
 Recorded improvements, newest last:
 
@@ -73,6 +72,12 @@ Recorded improvements, newest last:
 - Escape double-check removed (commit `61dfc70`): `P()` already calls
   `needsEscape`, so the following `escapeTest.test` regexp could never be
   false and is skipped.
+- Round five polish (commit `edacc36`): `--help` on the driver, clearer
+  missing-file errors, a `--expected` flag for the benchmark, and a guard
+  around an invalid `Tokenizer` argument.
+- Cache threshold lowered again to 32 entries (commit `8931b41`): the list
+  item regexp cache keeps only the hottest bullet patterns, trimming memory
+  further with no exactness change.
 
 ## Commit list
 
@@ -82,7 +87,9 @@ Recorded improvements, newest last:
 - `b483258` Document measured speedups and usage
 - `484e666` Rewrite the driver and helpers for round four
 - `61dfc70` Tune the list item cache threshold
-- `Document round four measurements` (previous README update)
+- `edacc36` Polish the round five driver and helpers
+- `8931b41` Tune the list item cache retention
+- `Document round five measurements` (this README update)
 
 ## Test
 
