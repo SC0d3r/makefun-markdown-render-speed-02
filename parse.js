@@ -1,7 +1,8 @@
 import { Tokenizer, marked } from './vendor/marked/marked.esm.js';
 import { installGuards } from './tokenizer-guards.js';
 
-// Install the character guard layer once, before any render happens.
+// Install the character guard layer once, before any render happens. The
+// installer is idempotent, so re-importing this module is harmless.
 installGuards(Tokenizer);
 
 /**
@@ -18,6 +19,7 @@ export const OPTIONS = Object.freeze({});
  *
  * @param {string} markdown Source Markdown.
  * @returns {string} The rendered HTML.
+ * @throws {TypeError} When `markdown` is not a string.
  */
 export function render(markdown) {
   if (typeof markdown !== 'string') {

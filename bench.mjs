@@ -9,10 +9,12 @@ const benchDir = join(repo, '.bench-output');
 const timeBin = '/usr/bin/time';
 
 /**
- * Usage: node bench.mjs [--runs N] [--input DIR]
+ * Usage: node bench.mjs [--runs N] [--input DIR] [--expected FILE]
  *
  * Every run spawns a fresh `main.ts` process and reports its user+system CPU
- * time, so the numbers are comparable with the judge's harness.
+ * time, so the numbers are comparable with the judge's harness. `--expected`
+ * points at another reference file when benchmarking an input other than the
+ * kit's practice set.
  */
 const argv = process.argv.slice(2);
 
@@ -37,7 +39,7 @@ if (rawRuns !== null) {
 }
 
 const inputDir = flagValue('input') || join(kit, 'practice', 'input');
-const expectedFile = join(kit, 'practice', 'reference', 'expected.json');
+const expectedFile = flagValue('expected') || join(kit, 'practice', 'reference', 'expected.json');
 
 const cases = JSON.parse(readFileSync(join(inputDir, 'cases.json'), 'utf8'));
 const expected = JSON.parse(readFileSync(expectedFile, 'utf8'));

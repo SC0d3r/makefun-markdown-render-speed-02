@@ -37,6 +37,15 @@ const outputDir = join(repo, '.test-output');
 const cpuFile = join(outputDir, 'cpu.txt');
 const timeBin = '/usr/bin/time';
 
+// Fail with the offending path instead of a stack trace from deep inside the
+// comparison when the kit is not checked out next to this repo.
+for (const required of [join(inputDir, 'cases.json'), expectedFile]) {
+  if (!existsSync(required)) {
+    console.error(`missing required file: ${required}`);
+    process.exit(1);
+  }
+}
+
 rmSync(outputDir, { recursive: true, force: true });
 mkdirSync(outputDir, { recursive: true });
 

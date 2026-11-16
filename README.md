@@ -13,15 +13,19 @@ default options. `main.ts` reads a JSON array of `{ id, markdown }` objects
 from `cases.json` and writes the rendered HTML strings to `html.json` in the
 same order.
 
-## Round four layout
+## Round five layout
 
 - `main.ts` — driver; input/output directories come from `MAKEFUN_INPUT_DIR`
   and `MAKEFUN_OUTPUT_DIR`, or from `--input DIR` / `--output DIR`.
+  `--help` prints the usage line without rendering.
 - `parse.js` — thin wrapper around the vendored bundle plus `renderAll`.
 - `tokenizer-guards.js` — character guards installed on `Tokenizer.prototype`
   once, before the first render.
-- `test.mjs` — exactness harness against the kit's practice input.
-- `bench.mjs` — fresh-process CPU benchmark, reports minimum and median.
+- `test.mjs` — exactness harness against the kit's practice input; it now
+  reports a missing cases or expected file by path instead of failing deep in
+  the comparison.
+- `bench.mjs` — fresh-process CPU benchmark, reports minimum and median, and
+  accepts `--expected FILE` for inputs other than the kit's practice set.
 
 ## Fork and licence
 
@@ -78,7 +82,7 @@ Recorded improvements, newest last:
 - `b483258` Document measured speedups and usage
 - `484e666` Rewrite the driver and helpers for round four
 - `61dfc70` Tune the list item cache threshold
-- `Document round four measurements` (this README update)
+- `Document round four measurements` (previous README update)
 
 ## Test
 
@@ -101,4 +105,5 @@ node bench.mjs --runs 4
 
 Each run is a fresh Node process; the script prints the minimum and median
 CPU time over the requested number of runs. Pass `--runs N` to change the
-sample size and `--input DIR` to benchmark another practice directory.
+sample size, `--input DIR` to benchmark another practice directory, and
+`--expected FILE` to pair it with another reference file.

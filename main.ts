@@ -11,7 +11,20 @@ import { render } from './parse.js';
  * them) but may also be overridden on the command line:
  *
  *   node main.ts --input ./practice/input --output ./out
+ *
+ * Pass `--help` to print this usage without rendering anything.
  */
+const USAGE = `Usage: node main.ts [--input DIR] [--output DIR]
+
+Reads cases.json from the input directory and writes html.json to the output
+directory. The defaults come from MAKEFUN_INPUT_DIR and MAKEFUN_OUTPUT_DIR,
+falling back to /input and /output when those variables are unset.`;
+
+if (process.argv.includes('--help')) {
+  console.log(USAGE);
+  process.exit(0);
+}
+
 function readDirectoryFlag(name, fallback) {
   const flagIndex = process.argv.indexOf(`--${name}`);
   if (flagIndex === -1) return fallback;
@@ -26,7 +39,14 @@ const inputDir = readDirectoryFlag('input', process.env.MAKEFUN_INPUT_DIR || '/i
 const outputDir = readDirectoryFlag('output', process.env.MAKEFUN_OUTPUT_DIR || '/output');
 
 const casesPath = join(inputDir, 'cases.json');
-const cases = JSON.parse(readFileSync(casesPath, 'utf8'));
+let cases;
+try {
+  cases = JSON.parse(readFileSync(casesPath, 'utf8'));
+} catch (error) {
+  // Surface the path as well as the reason: a missing cases.json is the most
+  // common harness misconfiguration and the bare ENOENT is easy to miss.
+  throw new Error(`cannot read cases from ${casesPath}: ${error.message}`);
+}
 
 if (!Array.isArray(cases)) {
   throw new TypeError(`${casesPath} must contain a JSON array of cases`);

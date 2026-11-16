@@ -12,6 +12,9 @@
 node_modules/
 coverage/
 *.tsbuildinfo
+.cache/
 
-# Editors and OS
+# Patch residue and editors/OS
+*.orig
+*.rej
 .DS_Store

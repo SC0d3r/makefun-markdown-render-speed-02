@@ -6,6 +6,10 @@
  * tokenizers, has within three leading spaces) one of a few marker
  * characters. These helpers reject impossible calls before the regexp engine
  * is entered.
+ *
+ * Every guard is a pure predicate over the current source prefix: no state is
+ * kept between calls, so the guarded methods stay interchangeable with the
+ * originals that marked installed.
  */
 
 const MAX_BLOCK_INDENT = 3;
@@ -92,6 +96,10 @@ function isAsciiLetter(code) {
 /**
  * A guard returns true when the wrapped tokenizer could possibly match. A
  * false result lets marked skip the call entirely.
+ *
+ * Guards may be conservative (return true when in doubt); correctness only
+ * requires that they never reject a prefix the original tokenizer could
+ * consume.
  */
 const guards = {
   // Block tokenizers.
@@ -201,9 +209,13 @@ const GUARDED = Symbol.for('makefun.tokenizerGuards.installed');
  *
  * @param {Function} Tokenizer
  * @returns {object} The guarded prototype.
+ * @throws {TypeError} When `Tokenizer` has no prototype to patch.
  */
 export function installGuards(Tokenizer) {
-  const prototype = Tokenizer.prototype;
+  const prototype = Tokenizer && Tokenizer.prototype;
+  if (!prototype) {
+    throw new TypeError('installGuards expects a Tokenizer class');
+  }
   if (prototype[GUARDED]) return prototype;
 
   for (const [name, canMatch] of Object.entries(guards)) {
