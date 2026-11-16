@@ -1,3 +1,4 @@
 .test-output/
 .bench-output/
+.work/
 node_modules/
