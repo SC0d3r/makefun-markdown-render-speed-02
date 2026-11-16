@@ -5,8 +5,14 @@ import { spawnSync } from 'node:child_process';
 
 const repo = dirname(fileURLToPath(import.meta.url));
 const kit = '/home/sck/sr/md02-kit/markdown-render-speed-02-kit';
-const inputDir = join(kit, 'practice', 'input');
-const expectedFile = join(kit, 'practice', 'reference', 'expected.json');
+// Optional argument: an input directory, or a path to its cases.json.
+const casesArg = process.argv[2] ? resolve(process.argv[2]) : null;
+const inputDir = casesArg
+  ? (casesArg.endsWith('.json') ? dirname(casesArg) : casesArg)
+  : join(kit, 'practice', 'input');
+const expectedFile = process.argv[3]
+  ? resolve(process.argv[3])
+  : join(kit, 'practice', 'reference', 'expected.json');
 const outputDir = join(repo, '.test-output');
 const cpuFile = join(outputDir, 'cpu.txt');
 const timeBin = '/usr/bin/time';
@@ -73,6 +79,9 @@ console.log(`cpu: ${cpuMs.toFixed(1)} ms`);
 if (failures.length > 0) {
   console.log(`first mismatches: ${failures.join(', ')}`);
 }
+console.log(
+  `summary: ${matches}/${cases.length} exact in ${cpuMs.toFixed(1)} ms CPU`,
+);
 if (matches !== cases.length) {
   process.exit(1);
 }

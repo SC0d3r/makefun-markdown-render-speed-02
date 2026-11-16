@@ -1,4 +1,6 @@
 .test-output/
 .bench-output/
 .work/
+.profile
 node_modules/
+*.log

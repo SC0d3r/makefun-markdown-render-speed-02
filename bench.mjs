@@ -10,6 +10,14 @@ const expectedFile = join(kit, 'practice', 'reference', 'expected.json');
 const benchDir = join(repo, '.bench-output');
 const timeBin = '/usr/bin/time';
 
+// Usage: node bench.mjs [--runs N]
+let runs = 4;
+const runsIndex = process.argv.indexOf('--runs');
+if (runsIndex !== -1) {
+  const parsed = Number.parseInt(process.argv[runsIndex + 1], 10);
+  if (Number.isFinite(parsed) && parsed > 0) runs = parsed;
+}
+
 const cases = JSON.parse(readFileSync(join(inputDir, 'cases.json'), 'utf8'));
 const expected = JSON.parse(readFileSync(expectedFile, 'utf8'));
 const expectedById = new Map(expected.cases.map((entry) => [entry.id, entry.html]));
@@ -18,7 +26,7 @@ rmSync(benchDir, { recursive: true, force: true });
 mkdirSync(benchDir, { recursive: true });
 
 const cpuTimes = [];
-for (let run = 1; run <= 4; run++) {
+for (let run = 1; run <= runs; run++) {
   const outputDir = join(benchDir, `run-${run}`);
   const cpuFile = join(outputDir, 'cpu.txt');
   mkdirSync(outputDir, { recursive: true });
@@ -66,4 +74,4 @@ for (let run = 1; run <= 4; run++) {
   console.log(`run ${run}: ${matches} of ${cases.length} matches, ${cpuMs.toFixed(1)} ms CPU`);
 }
 
-console.log(`minimum CPU: ${Math.min(...cpuTimes).toFixed(1)} ms`);
+console.log(`minimum CPU: ${Math.min(...cpuTimes).toFixed(1)} ms over ${runs} runs`);
